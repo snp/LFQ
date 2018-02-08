@@ -11,7 +11,7 @@
 #' @export
 #'
 #' @examples
-importMQ <- function(proteinGroups = "proteinGroups.txt", idVar = "Majority protein IDs", qPrefix = "LFQ intensity", removeReverse = TRUE, removeConaminants = TRUE,
+importMQ_LFQ <- function(proteinGroups = "proteinGroups.txt", idVar = "Majority protein IDs", qPrefix = "LFQ intensity", removeReverse = TRUE, removeConaminants = TRUE,
     cleanup = TRUE) {
 
     # Read datafile
@@ -41,4 +41,41 @@ importMQ <- function(proteinGroups = "proteinGroups.txt", idVar = "Majority prot
         data <- data %>% full_join(na.samples, by = "Sample") %>% filter(selected) %>% select(-selected)
     }
     return(data)
+}
+
+importMQ_TMT <- function(proteinGroups = "proteinGroups.txt", idVar = "Majority protein IDs", qPrefix = "Reporter intensity corrected", removeReverse = TRUE, removeConaminants = TRUE,
+                         cleanup = TRUE) {
+
+  # Read datafile
+  if (!file.exists(proteinGroups)) {
+    message("Can't find file ", proteinGroups, ". Check the location")
+    return(data_frame())
+  }
+  data <- suppressMessages(readr::read_tsv(proteinGroups)) %>%
+    dplyr::mutate_(id = sprintf("`%s`", idVar)) %>%
+    dplyr::mutate(id = sub(";.*", "", id)) %>%
+    dplyr::mutate(id = gsub("[^a-zA-Z0-9-]+", "_", id)) %>%
+    tidyr::gather(Sample, Value, matches(sprintf("^%s\\s*(\\d+)\\s+(.+)$", qPrefix))) %>%
+    dplyr::mutate(Channel = as.numeric(sub(sprintf("^%s\\s*(\\d+)\\s+(.+)$", qPrefix), "\\1", Sample)),
+                  Sample = sub(sprintf("^%s\\s*(\\d+)\\s+(.+)$", qPrefix), "\\2", Sample),
+                  Value = ifelse(Value > 10, log2(Value), NA))
+
+  message("Data loaded. ", length(unique(data$id)), " proteins, ", length(unique(data$Sample)), " samples.")
+  if (cleanup) {
+    data <- data %>% select(-contains("Identification"), -contains("Sequence"), -contains("Peptide"), -contains("Intensity"), -contains("MS/MS"),
+                            -contains("site"), -contains("IDs"), -contains("Mol. weight"), -contains("Fasta"), -contains("Fraction"), matches("^Unique peptides$"))
+    message("Removing outliers...")
+    # N <- length(unique(data$Sample))
+
+    na.proteins <- data %>% group_by(id) %>% summarise(num.na = sum(is.na(Value))) %>% ungroup()
+    na.proteins <- na.proteins %>% mutate(selected = num.na < (mean(na.proteins$num.na) + sd(na.proteins$num.na))) %>% select(id, selected)
+    message("    ", sum(!na.proteins$selected), " proteins have too many missing values and will be removed.")
+    data <- data %>% full_join(na.proteins, by = c("id")) %>% filter(selected == TRUE) %>% select(-selected)
+
+    na.samples <- data %>% group_by(Sample, Channel) %>% summarise(num.na = sum(is.na(Value))) %>% ungroup()
+    na.samples <- na.samples %>% mutate(selected = num.na < (mean(na.samples$num.na) + 2.5 * sd(na.samples$num.na))) %>% select(Sample,Channel, selected)
+    message("    ", sum(!na.samples$selected), " samples have too many missing values and will be removed.")
+    data <- data %>% full_join(na.samples, by = c("Sample", "Channel")) %>% filter(selected) %>% select(-selected)
+  }
+  return(data)
 }

@@ -24,5 +24,5 @@ normalizeLF <- function(data, method = "lm") {
     })
 
 
-    data %>% left_join(norm.data %>% select(id, Sample, normValue), by = c("id", "Sample")) %>% mutate(Value_ = Value) %>% mutate(Value = normValue)
+    data %>% left_join(norm.data %>% select(id, Sample, normValue), by = c("id", "Sample")) %>% mutate(Value_ = Value) %>% mutate(Value = normValue) %>% select(-normValue)
 }
