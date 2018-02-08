@@ -64,7 +64,7 @@ lfq_pca <- function(data, plot = TRUE, color = NA, shape=NA, plotly = TRUE) {
       print(lfq_pca_plot)
     }else{
       lfq_pca_plot <- plotly::subplot(plotly::ggplotly(pca.plot.12 + ggplot2::guides(color="none",shape="none")),
-                                      plotly::ggplotly(pca.plot.23 + ggplot2::guides(color="none",shape="none")),
+                                      plotly::ggplotly(pca.plot.components + ggplot2::guides(color="none",shape="none")),
                                       shareY = FALSE) %>% plotly::layout(showlegend = FALSE )
       lfq_pca_plot
     }
