@@ -80,7 +80,7 @@ importMQ_TMT <- function(proteinGroups = "proteinGroups.txt", idVar = "Majority 
   return(data)
 }
 
-importPD_TMT <- function(proteinGroups = "Proteins.txt", idVar = "Accession", qPrefix = "Abundance F3", removeReverse = TRUE, removeConaminants = TRUE,
+importPD_TMT <- function(proteinGroups = "Proteins.txt", idVar = "Accession", qPrefix = "Abundance", removeReverse = TRUE, removeConaminants = TRUE,
                          cleanup = TRUE) {
 
   # Read datafile
@@ -92,9 +92,11 @@ importPD_TMT <- function(proteinGroups = "Proteins.txt", idVar = "Accession", qP
     dplyr::mutate_(id = sprintf("`%s`", idVar)) %>%
     dplyr::mutate(id = sub(";.*", "", id)) %>%
     dplyr::mutate(id = gsub("[^a-zA-Z0-9-]+", "_", id)) %>%
-    tidyr::gather(Sample, Value, matches(sprintf("^%s\\s*(\\d+[NCnc]?)\\s+(.+)$", qPrefix))) %>%
-    dplyr::mutate(Channel = sub(sprintf("^%s\\s*(\\d+[NCnc]?)\\s+(.+)$", qPrefix), "\\1", Sample),
-                  Sample = sub(sprintf("^%s\\s*(\\d+[NCnc]?)\\s+(.+)$", qPrefix), "\\2", Sample),
+    tidyr::gather(Sample, Value, matches(sprintf("^%s:? (F\\d+):?\\s*(\\d+[NCnc]?),?\\s+(.+)$", qPrefix))) %>%
+    dplyr::mutate(Channel = sub(sprintf("^%s:? (F\\d+):?\\s*(\\d+[NCnc]?),?\\s+(.+)$", qPrefix), "\\2", Sample),
+                  Label = sub(sprintf("^%s:? (F\\d+):?\\s*(\\d+[NCnc]?),?\\s+(.+)$", qPrefix), "\\3", Sample),
+                  File = sub(sprintf("^%s:? (F\\d+):?\\s*(\\d+[NCnc]?),?\\s+(.+)$", qPrefix), "\\1", Sample),
+                  Sample = sprintf("%s_%s", File, Channel),
                   Value = ifelse(Value > 10, log2(Value), NA))
 
   message("Data loaded. ", length(unique(data$id)), " proteins, ", length(unique(data$Sample)), " samples.")

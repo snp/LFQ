@@ -1,3 +1,3 @@
 .onAttach <- function(libname, pkgname) {
-  packageStartupMessage("Welcome LFQ Proteomics package")
+  packageStartupMessage("Welcome to LFQ Proteomics package")
 }

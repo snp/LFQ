@@ -32,5 +32,7 @@ lfq_ttest <- function(data, control, sample, var.equal = TRUE, paired = FALSE, a
         } else {
             data.frame()
         }
-    })
+    }) -> data_tested
+    if(nrow(data_tested)>1)
+      data_tested$`p.adj` <- p.adjust(data_tested$p.value, method='fdr')
 }
