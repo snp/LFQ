@@ -107,7 +107,7 @@ importPD_TMT <- function(proteinGroups = "Proteins.txt", idVar = "Accession", qP
     # N <- length(unique(data$Sample))
 
     na.proteins <- data %>% group_by(id) %>% summarise(num.na = sum(is.na(Value))) %>% ungroup()
-    na.proteins <- na.proteins %>% mutate(selected = num.na < (mean(na.proteins$num.na) + sd(na.proteins$num.na))) %>% select(id, selected)
+    na.proteins <- na.proteins %>% mutate(selected = num.na < (mean(na.proteins$num.na) + 3*sd(na.proteins$num.na))) %>% select(id, selected)
     message("    ", sum(!na.proteins$selected), " proteins have too many missing values and will be removed.")
     data <- data %>% full_join(na.proteins, by = c("id")) %>% filter(selected == TRUE) %>% select(-selected)
 
